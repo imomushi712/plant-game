@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植物クリッカー</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            text-align: center;
+            background-color: #0b130e;
+            color: #fff;
+            margin: 0;
+            padding: 30px 20px 100px 20px;
+            overflow-y: auto; 
+            position: relative;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #14261a 0%, #0d1a12 100%);
+            padding: 30px;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 0 15px rgba(82,222,151,0.1);
+            border: 1px solid #1f3a28;
+        }
+        h1 { 
+            color: #52de97; 
+            margin-top: 0; 
+            font-size: 32px;
+            text-shadow: 0 0 15px rgba(82,222,151,0.4);
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        .game-button {
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, #52de97 0%, #399c69 100%);
+            border-radius: 20px;
+            margin: 20px auto;
+            box-shadow: 0 10px 0 #236141, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.05s ease;
+            position: relative;
+            top: 0;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .game-button.active {
+            top: 8px;
+            box-shadow: 0 2px 0 #236141, 0 5px 10px rgba(0,0,0,0.4);
+        }
+        .score-box {
+            background: #080f0b;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            border: 1px solid #14261a;
+        }
+        .score { font-size: 48px; font-weight: bold; color: #a3f7bf; word-break: break-all; text-shadow: 0 0 10px rgba(163,247,191,0.2); }
+        .stats { font-size: 16px; color: #add8e6; margin: 6px 0; font-family: monospace; }
+        .sys-btn {
+            background: #223a2b;
+            color: #8cbfa0;
+            border: 1px solid #2f523d;
+            padding: 5px 12px;
+            font-size: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 5px 20px 5px;
+        }
+        .sys-btn:hover { background: #2f523d; color: #fff; }
+        
+        .toggle-title-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            border-bottom: 2px solid #399c69;
+            padding-bottom: 8px;
+        }
+        .toggle-title { font-size: 22px; color: #52de97; margin: 0; text-align: left; }
+        .toggle-action-btn {
+            background: #16353d;
+            border: 1px solid #00fff0;
+            color: #00fff0;
+            padding: 3px 10px;
+            font-size: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .toggle-action-btn:hover { background: #00fff0; color: #000; }
+        .code-box, .quest-container, .pet-container {
+            background: rgba(8, 15, 11, 0.8);
+            border: 1px dashed #1b808a;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .quest-container { border-color: #399c69; background: rgba(15, 32, 23, 0.7); }
+        .pet-container { border-color: #f5b041; background: rgba(30, 25, 15, 0.7); }
+        
+        .code-input {
+            background: #000;
+            border: 1px solid #1b808a;
+            color: #00fff0;
+            padding: 8px 15px;
+            font-size: 16px;
+            border-radius: 6px;
+            width: 60%;
+            text-align: center;
+            font-family: monospace;
+        }
+        .code-btn {
+            background: #1b808a;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .code-btn:hover { background: #23a6b3; }
+
+        .quest-item, .pet-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 3px solid #fffa65;
+        }
+        .pet-item { border-left: 3px solid #f5b041; }
+        .quest-info, .pet-info { font-size: 13px; max-width: 70%; }
+        .quest-title, .pet-title { font-weight: bold; color: #fffa65; font-size: 14px; }
+        .pet-title { color: #f5b041; }
+        .quest-reward, .pet-effect { color: #add8e6; font-size: 12px; margin-top: 4px; font-family: monospace; }
+        
+        .quest-btn, .pet-btn {
+            background: #f5b041;
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .quest-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .quest-btn.claimed { background: #223a2b; color: #52de97; cursor: not-allowed; }
+        .pet-btn.active-pet { background: #52de97; color: #000; }
+
+        .current-pet-display {
+            font-size: 18px;
+            color: #f5b041;
+            font-weight: bold;
+            background: rgba(245, 176, 65, 0.1);
+            padding: 8px;
+            border-radius: 8px;
+            margin: 10px auto 20px auto;
+            max-width: 400px;
+            border: 1px solid rgba(245, 176, 65, 0.3);
+        }
+
+        .shop-title { font-size: 22px; color: #52de97; margin-top: 30px; border-bottom: 2px solid #399c69; padding-bottom: 8px; text-align: left; }
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(8, 15, 11, 0.6);
+            padding: 15px 20px;
+            margin: 12px 0;
+            border-radius: 12px;
+            border-left: 4px solid #399c69;
+            transition: all 0.2s;
+        }
+        .shop-item.manual-upgrade {
+            border-left: 4px solid #00fff0;
+            background: rgba(8, 20, 25, 0.6);
+        }
+        .shop-info { text-align: left; max-width: 65%; }
+        .item-name { font-weight: bold; font-size: 18px; color: #fff; display: flex; align-items: center; }
+        .item-desc { font-size: 12px; color: #9bbfa7; margin-top: 6px; line-height: 1.4; }
+        .item-count {
+            font-size: 13px;
+            background-color: #2f523d;
+            color: #a3f7bf;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-left: 12px;
+            font-weight: bold;
+            border: 1px solid #399c69;
+        }
+        .shop-item.manual-upgrade .item-count {
+            background-color: #16353d;
+            color: #00fff0;
+            border: 1px solid #00fff0;
+        }
+        .buy-btn {
+            background: #399c69;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            min-width: 140px;
+            box-shadow: 0 4px 0 #236141;
+        }
+        .shop-item.manual-upgrade .buy-btn {
+            background: #1b808a;
+            box-shadow: 0 4px 0 #0f4f56;
+        }
+        .buy-btn:disabled { background: #2a332d; color: #666; cursor: not-allowed; box-shadow: none; transform: translateY(4px); }
+        .shop-item.manual-upgrade .buy-btn:disabled { background: #232c30; box-shadow: none; transform: translateY(4px); }
+        .buy-btn:hover:not(:disabled) { background: #45bd80; }
+        .shop-item.manual-upgrade .buy-btn:hover:not(:disabled) { background: #23a6b3; }
+        .pop-text {
+            position: absolute;
+            font-size: 24px;
+            font-weight: bold;
+            color: #00fff0;
+            pointer-events: none;
+            animation: floatUp 0.6s ease-out forwards;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-80px) scale(1.2); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>植物クリッカー</h1>
+    
+    <div id="current-pet-box" class="current-pet-display">🐾 連れているペット: なし</div>
+    
+    <div>
+        <button class="sys-btn" onclick="resetGame()">データをリセット</button>
+        <button class="sys-btn" onclick="saveGame()">手動セーブ</button>
+    </div>
+    
+    <div class="game-button" id="click-button" onmousedown="handleButtonPress(event)" onmouseup="handleButtonRelease()" onmouseleave="handleButtonRelease()" ontouchstart="handleButtonPress(event)" ontouchend="handleButtonRelease()"></div>
+    
+    <div class="score-box">
+        <div class="score" id="score-display">0円</div>
+        <div class="stats" id="cps-display">自動収入: 0円 /秒</div>
+        <div class="stats" id="power-display">手動: +1円</div>
+    </div>
+
+    <div class="toggle-title-box">
+        <h2 class="toggle-title">🐾 隠しペットの部屋</h2>
+        <button id="toggle-pet-btn" class="toggle-action-btn" onclick="toggleSection('pet-panel', 'toggle-pet-btn')">隠す</button>
+    </div>
+    <div id="pet-panel" class="pet-container">
+        <div id="pet-list">まだペットが孵化していません。隠しコードを見つけよう！</div>
+    </div>
+
+    <div class="toggle-title-box">
+        <h2 class="toggle-title">🏆 チャレンジクエスト</h2>
+        <button id="toggle-quest-btn" class="toggle-action-btn" onclick="toggleSection('quest-panel', 'toggle-quest-btn')">隠す</button>
+    </div>
+    <div id="quest-panel" class="quest-container">
+        <div id="quest-list"></div>
+    </div>
+
+    <div class="toggle-title-box">
+        <h2 class="toggle-title">🎁 プレゼントコード</h2>
+        <button id="toggle-code-btn" class="toggle-action-btn" onclick="toggleSection('code-panel', 'toggle-code-btn')">隠す</button>
+    </div>
+    <div id="code-panel" class="code-box">
+        <div style="font-size: 13px; color: #00fff0; margin-bottom: 8px; font-weight: bold;">プレゼントコード入力</div>
+        <input type="text" id="gift-code-input" class="code-input" placeholder="コードを入力...">
+        <button class="code-btn" onclick="checkGiftCode()">送信</button>
+    </div>
+
+    <div class="shop-title">💪 ツール・手動クリック強化</div>
+    <div id="upgrade-container"></div>
+    <div class="shop-title">🌿 植物の育成・アンロック</div>
+    <div id="shop-container"></div>
+</div>
+
+<script>
+    let score = 0;
+    let clickPower = 1;
+    let autoCps = 0;
+    let inputLog = "";
+    let totalClicks = 0; 
+    let usedCodes = {};
+    let activePetId = null;
+
+    let pets = {
+        "easter":     { name: "🐰 イースターバニー", effect: "手動クリック効率 +10%", multPower: 1.1, multCps: 1.0, unlocked: false },
+        "lucky7":     { name: "🎰 ラッキーセブン",   effect: "自動収入 +7%",         multPower: 1.0, multCps: 1.07, unlocked: false },
+        "matsudo":    { name: "🌳 マツドの精霊",     effect: "手動＆自動 +5%",       multPower: 1.05, multCps: 1.05, unlocked: false },
+        "clickking":  { name: "👑 クリックキング",   effect: "手動クリック効率 +25%", multPower: 1.25, multCps: 1.0, unlocked: false },
+        "cyber":      { name: "🤖 サイバーベア",     effect: "自動収入 +20%",        multPower: 1.0, multCps: 1.2, unlocked: false },
+        "ninja":      { name: "🥷 ニンジャキャット", effect: "手動クリック効率 +15%", multPower: 1.15, multCps: 1.0, unlocked: false },
+        "forest":     { name: "🌲 フォレストウルフ", effect: "自動収入 +15%",        multPower: 1.0, multCps: 1.15, unlocked: false },
+        "money":      { name: "💰 招き猫ゴールド",   effect: "手動＆自動 +10%",      multPower: 1.1, multCps: 1.1, unlocked: false },
+        "omega":      { name: "🐉 オメガドラゴン",   effect: "手動＆自動 +30%",      multPower: 1.3, multCps: 1.3, unlocked: false },
+        "bug":        { name: "🐛 デバッグワーム",   effect: "手動クリック効率 +50%", multPower: 1.5, multCps: 1.0, unlocked: false }
+    };
+
+    let quests = {
+        1: { title: "新人ハンターの初仕事", desc: "手動クリックを合計100回達成する", targetType: "clicks", targetVal: 100, reward: 5000, status: "open" },
+        2: { title: "本格的な庭園づくり", desc: "自動収入（毎秒）を1.000K円以上に設定する", targetType: "cps", targetVal: 1000, reward: 80000, status: "open" },
+        3: { title: "ベテランのクリック連打", desc: "手動クリックを合計1,000回達成する", targetType: "clicks", targetVal: 1000, reward: 500000, status: "open" },
+        4: { title: "世界の植物マスター", desc: "自動収入（毎秒）を100.000K円以上にする", targetType: "cps", targetVal: 100000, reward: 15000000, status: "open" }
+    };
+
+    let manualUpgrades = {
+        1: { name: "🧪 園芸用栄養活性剤", cost: 300,       count: 0, mult: 1.25, unlocked: true,  desc: "購入するたびに手動クリックの威力が 【さらに25%アップ】 する" },
+        2: { name: "🧪 特製液体肥料",     cost: 1500,      count: 0, mult: 1.30, unlocked: false, desc: "購入するたびに手動クリックの威力が 【さらに30%アップ】 する" },
+        3: { name: "✂️ 普及型園芸鋏",     cost: 8000,      count: 0, mult: 1.50, unlocked: false, desc: "購入するたびに手動クリックの威力が 【さらに50%アップ】 する" },
+        4: { name: "✂️ プロ用高級園芸鋏", cost: 45000,     count: 0, mult: 1.75, unlocked: false, desc: "購入するたびに手動クリックの威力が 【さらに75%アップ】 する" },
+        5: { name: "💡 簡易植物育成ライト", cost: 250000,    count: 0, mult: 2.00, unlocked: false, desc: "購入するたびに手動クリックの威力が 【さらに100%アップ】 する" },
+        6: { name: "💡 高級植物育成LED",   cost: 1500000,   count: 0, mult: 3.00, unlocked: false, desc: "購入するたびに手動クリックの威力が 【さらに200%アップ】 する" }
+    };
+    let items = {
+        1:  { name: "🌱 道端のコケ",         cost: 50,       cps: 1,        count: 0, unlocked: true,  desc: "日本庭園でも愛される強い生命力。" },
+        2:  { name: "🌼 タンポポ",           cost: 90,       cps: 2,        count: 0, unlocked: false, desc: "親しみやすさ抜群の黄色い野花。" },
+        3:  { name: "🌻 ヒマワリ",           cost: 160,      cps: 3,        count: 0, unlocked: false, desc: "太陽に向かって元気に咲く大輪。" },
+        4:  { name: "🌸 サクラ",             cost: 280,      cps: 5,        count: 0, unlocked: false, desc: "日本の春を彩る定番の安心感。" },
+        5:  { name: "🌿 アイビー",           cost: 500,      cps: 8,        count: 0, unlocked: false, desc: "おしゃれなインテリアの定番つる植物。" },
+        6:  { name: "💠 アジサイ",           cost: 900,      cps: 12,       count: 0, unlocked: false, desc: "雨に映える美しいグラデーション。" },
+        7:  { name: "🎐 チランジア",         cost: 1600,     cps: 18,       count: 0, unlocked: false, desc: "土が不要な不思議なエアプランツ。" },
+        8:  { name: "🦇 コウモリラン",       cost: 2900,     cps: 26,       count: 0, unlocked: false, desc: "壁掛けがかっこいい人気の珍奇植物。" },
+        9:  { name: "👹 ラフレシア",         cost: 5200,     cps: 38,       count: 0, unlocked: false, desc: "唯一無二の存在感を放つ世界最大の花。" },
+        10: { name: "⏳ ウェルウィッチア",   cost: 9300,     cps: 55,       count: 0, unlocked: false, desc: "奇想天外とも呼ばれる驚異の砂漠植物。" },
+        11: { name: "🏝️ パキポディウム",     cost: 16700,    cps: 80,       count: 0, unlocked: false, desc: "ぷっくりした幹が愛らしい大人気塊根植物。" },
+        12: { name: "👑 ソコトラナム",       cost: 30000,    cps: 115,      count: 0, unlocked: false, desc: "アデニウムの最高峰。植物界の絶対王者。" },
+        13: { name: "🦕 グラキリス",         cost: 54000,    cps: 165,      count: 0, unlocked: false, desc: "マダガスカル原産。塊根植物の王様。" },
+        14: { name: "🦓 ゼブリナ",           cost: 97000,    cps: 240,      count: 0, unlocked: false, desc: "茎のゼブラ柄模様が超スタイリッシュ。" },
+        15: { name: "👑 チタノタ",           cost: 175000,   cps: 350,      count: 0, unlocked: false, desc: "獰猛な棘と肉厚の葉を持つ大人気アガベ。" },
+        16: { name: "🐢 亀甲竜",             cost: 315000,   cps: 500,      count: 0, unlocked: false, desc: "塊根部が亀 of 甲羅のようにバキバキに割れる。" },
+        17: { name: "🎪 モンステラ・斑入り", cost: 567000,   cps: 720,      count: 0, unlocked: false, desc: "白い斑が美しく入り、高額で取引される。" },
+        18: { name: "🕳️ サルバドレンシス",   cost: 1020000,  cps: 1050,     count: 0, unlocked: false, desc: "ダースベイダーの仮面にそっくりな花。" },
+        19: { name: "🧫 ディフィニティヴ",   cost: 1836000,  cps: 1500,     count: 0, unlocked: false, desc: "大きな捕虫葉を持つ高級ハエトリソウ。" },
+        20: { name: "🦒 パキプス",           cost: 3305000,  cps: 2200,     count: 0, unlocked: false, desc: "塊根植物界最高峰の超高額レア種。" },
+        21: { name: "🏴‍☠️ ブラックキャット",   cost: 5949000,  cps: 3200,     count: 0, unlocked: false, desc: "黒いコウモリのような花を咲かせる。" },
+        22: { name: "🛕 ドルステニア",       cost: 10708000, cps: 4600,     count: 0, unlocked: false, desc: "ソコトラ島固有の希少種。独特な花が咲く。" },
+        23: { name: "🦋 ミミカキグサ",       cost: 19274000, cps: 6600,     count: 0, unlocked: false, desc: "地下に小さな捕虫袋を持つ小さな食虫植物。" },
+        24: { name: "🐙 九頭竜",             cost: 34693000, cps: 9500,     count: 0, unlocked: false, desc: "タコの足のように枝を全方位に伸ばす。" },
+        25: { name: "🧣 ラフレシアナ",       cost: 62447000, cps: 13500,    count: 0, unlocked: false, desc: "マニア憧れの捕虫袋を持つウツボカズラ。" },
+        26: { name: "🛡️ クラリネルビウム",   cost: 112400000, cps: 19000,    count: 0, unlocked: false, desc: "深緑の葉にクッキリ白い脈が走るアンスリウム。" },
+        27: { name: "🦖 ウィリンキー",       cost: 202320000, cps: 27000,    count: 0, unlocked: false, desc: "鹿の角のような巨大な葉を垂らすビカクシダ。" },
+        28: { name: "🐘 ピンクプリンセス",   cost: 364170000, cps: 38000,    count: 0, unlocked: false, desc: "鮮やかなピンク色の斑が入る奇跡の観葉植物。" },
+        29: { name: "🏺 ボジュラム・エデュレ",cost: 655500000, cps: 54000,    count: 0, unlocked: false, desc: "タネマギのような球根から細いツルを伸ばす。" },
+        30: { name: "🦊 プロストラタ",       cost: 1179900000, cps: 76000,   count: 0, unlocked: false, desc: "亀の甲羅模様の小さな葉が連なるペペロミア。" },
+        31: { name: "🔮 ミルビリス",         cost: 2123820000, cps: 107000,  count: 0, unlocked: false, desc: "夜になると葉をピタッと閉じて眠る塊根植物。" },
+        32: { name: "🩸 竜血樹",             cost: 3822870000, cps: 150000,  count: 0, unlocked: false, desc: "傷つけると赤い血のような樹液を流す巨樹。" },
+        33: { name: "🍍 サンセベリア・ロリダ",cost: 6881160000, cps: 210000,  count: 0, unlocked: false, desc: "サンスベリアの王様と呼ばれる超鈍足成長の希少種。" },
+        34: { name: "🍁 アデニア・グロボーサ",cost: 12386000000, cps: 290000, count: 0, unlocked: false, desc: "ザラザラした巨大な緑の球体からトゲ状の枝を出す。" },
+        35: { name: "🎪 ホワイトモンスター", cost: 22294900000, cps: 400000, count: 0, unlocked: false, desc: "葉の全体がほぼ真っ白に染まるモンステラの突然変異種。" },
+        36: { name: "🦚 オルビフォリア",     cost: 40130800000, cps: 550000, count: 0, unlocked: false, desc: "絵の具で描いたような美しい銀色の縞模様を持つ高級植物。" },
+        37: { name: "🦷 ヘリアンフォラ",     cost: 72235400000, cps: 760000, count: 0, unlocked: false, desc: "南米の秘境ギアナ高地に自生する原始的な食虫植物。" },
+        38: { name: "🦖 アロエ・ポリフィラ", cost: 130023800000, cps: 1050000, count: 0, unlocked: false, desc: "葉が完璧な対数螺旋を描いて成長する芸術品。" },
+        39: { name: "🪙 ステファニア",       cost: 234042900000, cps: 1450000, count: 0, unlocked: false, desc: "ジャガイモのような塊根から綺麗な丸い葉を出す。" },
+        40: { name: "🏟️ ハートカズラ",       cost: 421277200000, cps: 2000000, count: 0, unlocked: false, desc: "ハート型の美しい葉が鎖のように連なるセロペギア。" },
+        41: { name: "🏮 ダーリントニア",     cost: 758298900000, cps: 2750000, count: 0, unlocked: false, desc: "コブラが鎌首をもたげたような姿をした不気味な食虫植物。" },
+        42: { name: "🧬 ホヤ・カーリー",     cost: 1364938000000, cps: 3780000, count: 0, unlocked: false, desc: "葉っぱが完璧なハートの形をしている人気の多肉植物。" },
+        43: { name: "🐋 ミクロソリウム",     cost: 2456888000000, cps: 5200000, count: 0, unlocked: false, desc: "クジラの皮膚のような独特の質感を葉に持つ珍しいシダ。" },
+        44: { name: "🛰️ ボウエア・蒼角殿",   cost: 4422399000000, cps: 7150000, count: 0, unlocked: false, desc: "翡翠色の球根から細い緑のレースのようなツルを伸ばす。" },
+        45: { name: "🌌 ジュエルオーキッド", cost: 7960318000000, cps: 9800000, count: 0, unlocked: false, desc: "暗闇で葉脈が金糸のようにキラキラと輝く宝石蘭。" },
+        46: { name: "📯 ユーフォルビア・オベサ",cost: 14328573000000, cps: 13400000, count: 0, unlocked: false, desc: "トゲが無く、完全に綺麗な球体の形をした不思議なサボテン。" },
+        47: { name: "🏯 オベリスク・アガベ", cost: 25791431000000, cps: 18300000, count: 0, unlocked: false, desc: "まるで古代の神殿の柱のように鋭く美しくそびえ立つ希少種。" },
+        48: { name: "🧿 ディッキア",         cost: 46424576000000, cps: 25000000, count: 0, unlocked: false, desc: "ノコギリの歯のような強烈なトゲで武装したワイルド植物。" },
+        49: { name: "🎭 パフィオペディルム", cost: 83564237000000, cps: 34000000, count: 0, unlocked: false, desc: "女神のスリッパと呼ばれる、袋状 of 奇妙で妖艶な花を咲かせる蘭。" },
+        50: { name: "🌅 バオバブの木",       cost: 150415626000000, cps: 46500000, count: 0, unlocked: false, desc: "数千年の寿命を持ち、数トンの水を体内に蓄える地球の伝説巨木。" }
+    };
+
+    function formatMoney(value) {
+        if (value === 0) return "0円";
+        let temp = Math.round(value * 1000) / 1000;
+        if (temp >= 1000000000000) return (temp / 1000000000000).toFixed(3) + "T円";
+        if (temp >= 1000000000) return (temp / 1000000000).toFixed(3) + "B円";
+        if (temp >= 1000000) return (temp / 1000000).toFixed(3) + "M円";
+        if (temp >= 1000) return (temp / 1000).toFixed(3) + "K円";
+        return temp.toFixed(0) + "円";
+    }
+
+    function toggleSection(sectionId, btnId) {
+        let target = document.getElementById(sectionId);
+        let btn = document.getElementById(btnId);
+        if (target.style.display === "none") {
+            target.style.display = "block";
+            btn.textContent = "隠す";
+        } else {
+            target.style.display = "none";
+            btn.textContent = "表示";
+        }
+    }
+    const shopContainer = document.getElementById('shop-container');
+    const upgradeContainer = document.getElementById('upgrade-container');
+
+    function generateShopHTML() {
+        let shopHtml = "";
+        for (let id in items) {
+            shopHtml += '<div class="shop-item" id="item' + id + '-row">' +
+                        '<div class="shop-info">' +
+                        '<div class="item-name">' + items[id].name + ' <span class="item-count" id="item' + id + '-count">×0</span></div>' +
+                        '<div class="item-desc">' + items[id].desc + '1秒ごとに +' + formatMoney(items[id].cps) + '</div>' +
+                        '</div>' +
+                        '<button class="buy-btn" id="item' + id + '-btn" onclick="buyItem(' + id + ')">購入</button>' +
+                        '</div>';
+        }
+        shopContainer.innerHTML = shopHtml;
+
+        let upgradeHtml = "";
+        for (let id in manualUpgrades) {
+            upgradeHtml += '<div class="shop-item manual-upgrade" id="up' + id + '-row">' +
+                           '<div class="shop-info">' +
+                           '<div class="item-name">' + manualUpgrades[id].name + ' <span class="item-count" id="up' + id + '-count">×0</span></div>' +
+                           '<div class="item-desc">' + manualUpgrades[id].desc + '</div>' +
+                           '</div>' +
+                           '<button class="buy-btn" id="up' + id + '-btn" onclick="buyUpgrade(' + id + ')">購入</button>' +
+                           '</div>';
+        }
+        upgradeContainer.innerHTML = upgradeHtml;
+    }
+    generateShopHTML();
+
+    function updatePetListHTML() {
+        let petList = document.getElementById('pet-list');
+        if (!petList) return;
+        let html = "";
+        let hasAnyPet = false;
+
+        for (let id in pets) {
+            let p = pets[id];
+            if (p.unlocked) {
+                hasAnyPet = true;
+                let isActive = (activePetId === id);
+                let btnText = isActive ? "連れ歩き中" : "入れ替える";
+                let btnClass = isActive ? "pet-btn active-pet" : "pet-btn";
+                
+                html += '<div class="pet-item">' +
+                        '<div class="pet-info">' +
+                        '<div class="pet-title">' + p.name + '</div>' +
+                        '<div class="pet-effect">効果: ' + p.effect + '</div>' +
+                        '</div>' +
+                        '<button class="' + btnClass + '" onclick="setActivePet(\'' + id + '\')">' + btnText + '</button>' +
+                        '</div>';
+            }
+        }
+        if (hasAnyPet) {
+            petList.innerHTML = html;
+        } else {
+            petList.innerHTML = "まだペットが孵化していません。隠しコードを見つけよう！";
+        }
+    }
+
+    function setActivePet(petId) {
+        if (pets[petId] && pets[petId].unlocked) {
+            if (activePetId === petId) {
+                activePetId = null;
+                document.getElementById('current-pet-box').textContent = "🐾 連れているペット: なし";
+            } else {
+                activePetId = petId;
+                document.getElementById('current-pet-box').textContent = "🐾 連れているペット: " + pets[petId].name;
+            }
+            calculateClickPower();
+            let baseCps = 0;
+            for (let id in items) { baseCps += items[id].cps * items[id].count; }
+            let petCpsMult = (activePetId && pets[activePetId]) ? pets[activePetId].multCps : 1.0;
+            autoCps = baseCps * petCpsMult;
+
+            updatePetListHTML();
+            updateDisplay();
+            saveGame();
+        }
+    }
+
+    function updateQuestStatus() {
+        let questList = document.getElementById('quest-list');
+        if (!questList) return;
+        let html = "";
+        for (let id in quests) {
+            let q = quests[id];
+            let current = (q.targetType === "clicks") ? totalClicks : autoCps;
+            let isReady = current >= q.targetVal;
+            let btnText = "未達成", btnClass = "quest-btn", btnDisabled = "disabled";
+            
+            if (q.status === "claimed") {
+                btnText = "受取済み"; btnClass = "quest-btn claimed"; btnDisabled = "disabled";
+            } else if (isReady) {
+                btnText = "報酬受取"; btnClass = "quest-btn"; btnDisabled = "";
+            }
+            
+            html += '<div class="quest-item">' +
+                    '<div class="quest-info">' +
+                    '<div class="quest-title">' + q.title + '</div>' +
+                    '<div>' + q.desc + '</div>' +
+                    '<div style="font-size:11px; color:#add8e6; margin-top:4px;">進捗: ' + current + ' / ' + q.targetVal + '</div>' +
+                    '</div>' +
+                    '<div>' +
+                    '<div class="quest-reward">報酬: ' + formatMoney(q.reward) + '</div>' +
+                    '<button class="' + btnClass + '" ' + btnDisabled + ' onclick="claimQuestReward(' + id + ')">' + btnText + '</button>' +
+                    '</div>' +
+                    '</div>';
+        }
+        questList.innerHTML = html;
+    }
+
+    function claimQuestReward(id) {
+        let q = quests[id];
+        let current = (q.targetType === "clicks") ? totalClicks : autoCps;
+        if (current >= q.targetVal && q.status === "open") {
+            score += q.reward;
+            q.status = "claimed";
+            let pop = document.createElement('div');
+            pop.className = 'pop-text';
+            pop.style.color = "#fffa65"; pop.style.fontSize = "28px"; pop.style.width = "100%"; pop.style.left = "0px"; pop.style.top = "240px";
+            pop.textContent = "🏆 クエスト達成報酬: +" + formatMoney(q.reward);
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 2500);
+            updateQuestStatus(); updateDisplay(); saveGame();
+        }
+    }
+
+    function checkGiftCode() {
+        let inputField = document.getElementById('gift-code-input');
+        let code = inputField.value.trim().toLowerCase();
+        if (code === "") return;
+
+        if (usedCodes[code]) {
+            alert("❌ このコードはすでに使用済みです！");
+            inputField.value = "";
+            return;
+        }
+
+        let isSuccess = false;
+        let msg = "";
+
+        if (code === "imomushi") {
+            score += 1000000000000; msg = "🐛【裏ワザ】1.000T円 獲得！"; isSuccess = true;
+        } else if (code === "gold") {
+            score += 777777; msg = "💰【黄金の輝き】777.777K円 獲得！"; isSuccess = true;
+        } else if (code === "ultimate") {
+            score += 999999000000000; msg = "🌌【究極の超大金】999.999T円 獲得！"; isSuccess = true;
+        } else if (pets[code] !== undefined) {
+            pets[code].unlocked = true;
+            msg = "🐣 卵が孵化した！ペット【" + pets[code].name + "】を獲得！";
+            isSuccess = true;
+        }
+
+        if (isSuccess) {
+            usedCodes[code] = true;
+            let pop = document.createElement('div');
+            pop.className = 'pop-text'; pop.style.color = "#fffa65"; pop.style.fontSize = "24px"; pop.style.width = "100%"; pop.style.left = "0px"; pop.style.top = "240px";
+            pop.textContent = msg;
+            document.body.appendChild(pop);
+            setTimeout(() => pop.remove(), 2500);
+            
+            calculateClickPower();
+            updatePetListHTML();
+            updateQuestStatus();
+            updateDisplay();
+            saveGame();
+        } else {
+            alert("❌ 正しいコードを入力してください。");
+        }
+        inputField.value = "";
+    }
+    const clickButton = document.getElementById('click-button');
+    const scoreDisplay = document.getElementById('score-display');
+    const cpsDisplay = document.getElementById('cps-display');
+    const powerDisplay = document.getElementById('power-display');
+
+    function triggerGainScore(event) {
+        if (!clickButton.classList.contains('active')) {
+            let isCritical = Math.random() < 0.08; 
+            let finalPower = isCritical ? clickPower * 10 : clickPower;
+            score += finalPower;
+            totalClicks += 1; 
+            clickButton.classList.add('active');
+            createPopup(event, finalPower, isCritical);
+            
+            if (typeof updateQuestStatus === 'function') updateQuestStatus(); 
+            updateDisplay();
+        }
+    }
+
+    function handleButtonPress(event) {
+        if (event) event.preventDefault();
+        triggerGainScore(event);
+    }
+
+    function handleButtonRelease() {
+        clickButton.classList.remove('active');
+    }
+
+    function createPopup(event, value, isCritical) {
+        let pop = document.createElement('div');
+        pop.className = 'pop-text';
+        pop.textContent = (isCritical ? "🔥CRITICAL! +" : "+") + formatMoney(value);
+        if (isCritical) pop.style.color = "#fffa65";
+
+        let x, y;
+        if (event && event.pageX) {
+            x = event.pageX; y = event.pageY;
+        } else {
+            let rect = clickButton.getBoundingClientRect();
+            x = rect.left + window.scrollX + (rect.width / 2) + (Math.random() * 40 - 20);
+            y = rect.top + window.scrollY + (rect.height / 2) - 20;
+        }
+        pop.style.left = x + 'px'; pop.style.top = y + 'px';
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 600);
+    }
+
+    // ★アンロック機能の修復：購入が成功したら、即座に次の植物を解放フラグ（unlocked = true）にして画面を強制更新
+    function buyItem(id) {
+        let item = items[id];
+        if (score >= item.cost) {
+            score -= item.cost;
+            item.count += 1;
+            item.cost = Math.round(item.cost * 1.15);
+            
+            // 次の植物を自動解放
+            let nextId = Number(id) + 1;
+            if (items[nextId]) items[nextId].unlocked = true;
+            
+            let baseCps = 0;
+            for (let i in items) { baseCps += items[i].cps * items[i].count; }
+            let petCpsMult = (activePetId && pets[activePetId]) ? pets[activePetId].multCps : 1.0;
+            autoCps = baseCps * petCpsMult;
+
+            calculateClickPower();
+            updateQuestStatus(); 
+            updateDisplay(); // ここで画面に新商品がパッと追加描写されます
+            saveGame();
+        }
+    }
+
+    // ★アンロック機能の修復：購入が成功したら、即座に次の手動強化ツールを解放フラグにして強制画面更新
+    function buyUpgrade(id) {
+        let up = manualUpgrades[id];
+        if (score >= up.cost) {
+            score -= up.cost;
+            up.count += 1;
+            up.cost = Math.round(up.cost * 4.0); 
+
+            // 次のアップグレードツールを自動解放
+            let nextId = Number(id) + 1;
+            if (manualUpgrades[nextId]) manualUpgrades[nextId].unlocked = true;
+            
+            calculateClickPower();
+            updateDisplay(); // ここで次のツールがパッと追加描写されます
+            saveGame();
+        }
+    }
+
+    function calculateClickPower() {
+        let multiplier = 1;
+        for (let id in manualUpgrades) {
+            let up = manualUpgrades[id];
+            if (up.count > 0) { multiplier *= Math.pow(up.mult, up.count); }
+        }
+        let petPowerMult = (activePetId && pets[activePetId]) ? pets[activePetId].multPower : 1.0;
+        clickPower = 1 * multiplier * petPowerMult;
+    }
+
+    setInterval(function() {
+        if (autoCps > 0) { score += autoCps; updateDisplay(); }
+    }, 1000);
+
+    setInterval(saveGame, 10000);
+
+    // ★アンロック機能の修復：非表示（display = "none"）だった行を、解放された瞬間に（display = "flex"）へ切り替えてリアルタイム表示させる
+    function updateDisplay() {
+        scoreDisplay.textContent = formatMoney(score);
+        cpsDisplay.textContent = "自動収入: " + formatMoney(autoCps) + " /秒";
+        powerDisplay.textContent = "手動: +" + formatMoney(clickPower);
+
+        for (let id in items) {
+            let item = items[id];
+            let row = document.getElementById('item' + id + '-row');
+            let btn = document.getElementById('item' + id + '-btn');
+            let countDisplay = document.getElementById('item' + id + '-count');
+            if (row) {
+                if (item.unlocked) {
+                    row.style.display = "flex";
+                    countDisplay.textContent = "×" + item.count;
+                    btn.textContent = "購入: " + formatMoney(item.cost);
+                    btn.disabled = (score < item.cost);
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+        for (let id in manualUpgrades) {
+            let up = manualUpgrades[id];
+            let row = document.getElementById('up' + id + '-row');
+            let btn = document.getElementById('up' + id + '-btn');
+            let countDisplay = document.getElementById('up' + id + '-count');
+            if (row) {
+                if (up.unlocked) {
+                    row.style.display = "flex";
+                    countDisplay.textContent = "×" + up.count;
+                    btn.textContent = "購入: " + formatMoney(up.cost);
+                    btn.disabled = (score < up.cost);
+                } else {
+                    row.style.display = "none";
+                }
+            }
+        }
+    }
+
+    function saveGame() {
+        let saveData = { score: score, items: items, manualUpgrades: manualUpgrades, usedCodes: usedCodes, totalClicks: totalClicks, quests: quests, pets: pets, activePetId: activePetId };
+        localStorage.setItem('plantClickerSave', JSON.stringify(saveData));
+    }
+
+    function loadGame() {
+        let saved = localStorage.getItem('plantClickerSave');
+        if (saved) {
+            let data = JSON.parse(saved);
+            score = data.score;
+            usedCodes = data.usedCodes || {};
+            totalClicks = data.totalClicks || 0;
+            activePetId = data.activePetId || null;
+            if (data.quests) {
+                for (let id in data.quests) { if (quests[id]) quests[id].status = data.quests[id].status; }
+            }
+            if (data.pets) {
+                for (let id in data.pets) { if (pets[id]) pets[id].unlocked = data.pets[id].unlocked; }
+            }
+            for (let id in data.items) {
+                if (items[id]) {
+                    items[id].count = data.items[id].count; items[id].cost = data.items[id].cost; items[id].unlocked = data.items[id].unlocked;
+                }
+            }
+            if (data.manualUpgrades) {
+                for (let id in data.manualUpgrades) {
+                    if (manualUpgrades[id]) {
+                        manualUpgrades[id].count = data.manualUpgrades[id].count; manualUpgrades[id].cost = data.manualUpgrades[id].cost; manualUpgrades[id].unlocked = data.manualUpgrades[id].unlocked;
+                    }
+                }
+            }
+            manualUpgrades.unlocked = true;
+            if (activePetId) { document.getElementById('current-pet-box').textContent = "🐾 連れているペット: " + pets[activePetId].name; }
+            
+            let baseCps = 0;
+            for (let id in items) { baseCps += items[id].cps * items[id].count; }
+            let petCpsMult = (activePetId && pets[activePetId]) ? pets[activePetId].multCps : 1.0;
+            autoCps = baseCps * petCpsMult;
+            calculateClickPower();
+        }
+    }
+
+    // ★指連打システム：長押し（repeat）を完全に弾き、トントン叩いた時だけ最速反応するロジック
+    document.addEventListener('keydown', function(event) {
+        let activeEl = document.activeElement;
+        if (activeEl && (activeEl.id === 'gift-code-input')) {
+            if (event.key === 'Enter') { event.preventDefault(); checkGiftCode(); }
+            return; 
+        }
+        
+        // 長押し連打の時は処理をキャンセル（指でトントンした時だけ反応）
+        if (event.repeat) return;
+
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            triggerGainScore(null);
+        }
+    });
+
+    document.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter' || event.key === ' ') handleButtonRelease();
+    });
+
+    function resetGame() {
+        if (confirm("本当に最初からやり直しますか？ペットやコードも再度解放できます。")) {
+            localStorage.removeItem('plantClickerSave');
+            usedCodes = {};
+            activePetId = null;
+            location.reload();
+        }
+    }
+
+    loadGame();
+    updatePetListHTML();
+    if (typeof updateQuestStatus === 'function') updateQuestStatus(); 
+    updateDisplay();
+</script>
+</body>
+</html>
